@@ -44,9 +44,7 @@ n_vertices = 19 # size of board...
 X_vertex = tf.Variable(0) #  X position input comes from training data
 Y_vertex = tf.Variable(0) #  Y position input comes from training data
 board = tf.Variable(tf.zeros([n_vertices, n_vertices])) # accumulator where I convert from sparse to dense tensor.
-#batch_x = np.zeros(shape=(1, n_input), dtype=np.int32)  # this is what get's fed in as training patterns
 batch_x = [n_input]       # this is what get's fed in as training patterns
-#target_y = tf.Variable(tf.zeros([1, n_classes])) # this is what the result of each pattern should look like!
 target_y = []             # this is what the result of each pattern should look like!
 
 
@@ -128,7 +126,7 @@ with tf.Session() as sess:
     threads = tf.train.start_queue_runners(coord=coord)
 
     #  Because I happen to know that there are batch_size lines of data in the file...
-    for i in range(batch_size):
+    for epoch in range(batch_size):
        #print "\nfrom data.csv"
 
        # Retrieve a single instance.  In this case, X_vertex and Y_vertex are coordinates of vertices on the board.
@@ -140,10 +138,10 @@ with tf.Session() as sess:
        print "val", val
        print "temp_y", temp_y
 
-       st = tf.SparseTensor(indices=[[X_vertex, Y_vertex]], values=[val], shape=[n_vertices, n_vertices])
+       st = tf.SparseTensor(indices=[[X_vertex -1, Y_vertex -1]], values=[val], shape=[n_vertices, n_vertices])
        board = tf.add(tf.to_int32(board), tf.sparse_tensor_to_dense(st, default_value=0, validate_indices=True))
        #print "board shape", tf.shape(board)
-       #print sess.run(board)
+       print sess.run(board)
 
        print "\n\ny", y
        target_y.insert(0, temp_y)
@@ -152,7 +150,7 @@ with tf.Session() as sess:
 
        print "\nx", x
        batch_x = (tf.expand_dims(tf.reshape(board, [-1]),0)).eval()
-       print "batch_x ", batch_x
+       #print "batch_x ", batch_x
 
        print "\n\n"
 
@@ -160,14 +158,14 @@ with tf.Session() as sess:
        # Training cycle
        ######################
        avg_cost = 0.
-       #sess.run(optimizer, feed_dict={x: tf.convert_to_tensor(batch_x), y: tf.convert_to_tensor(y)})   ###  <---------Now it wants a tensor!!!
-       #print sess.run(optimizer, feed_dict={x: batch_x})   ###  <---------Now it wants a tensor!!!
-       #print sess.run(optimizer, feed_dict={y: target_y})   ###  <---------Now it wants a tensor!!!
        sess.run(optimizer, feed_dict={x: batch_x, y: target_y})   ###  <---------Now it wants a tensor!!!
 
        # Compute average loss
        #avg_cost += sess.run(cost, feed_dict={x: x, y: y})
-         
+       
+       # Clean up target_y
+       del target_y[0]
+
        # Display logs per epoch step
        if epoch % display_step == 0:
             print "Epoch:", '%04d' % (epoch+1), "cost=", "{:.9f}".format(avg_cost)
